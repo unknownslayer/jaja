@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: Unlicensed
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+contract GameDRM is ERC721 {
+    uint256 private tokenID;
+    mapping(uint256 => string) private gameFiles;
+    mapping(uint256 => address) private gameOwners;
+    mapping(uint256 => bool) private gameDownloaded;
+    
+    constructor() ERC721("GameDRM", "GDRM") {
+        tokenID = 1;
+    }
+
+    function uploadGame(string memory gameFile) public returns (uint256) {
+        uint256 newTokenID = tokenID++;
+        _mint(msg.sender, newTokenID);
+        gameFiles[newTokenID] = gameFile;
+        gameOwners[newTokenID] = msg.sender;
+        return newTokenID;
+    }
+
+    function purchaseGame(uint256 _tokenID) public {
+        require(_exists(_tokenID), "GameDRM: Invalid token ID");
+        require(gameOwners[_tokenID] != msg.sender, "GameDRM: You are already the owner of this game");
+        gameOwners[_tokenID] = msg.sender;
+    }
+
+    function downloadGame(uint256 _tokenID) public {
+        require(_exists(_tokenID), "GameDRM: Invalid token ID");
+        require(gameOwners[_tokenID] == msg.sender, "GameDRM: You are not the owner of this game");
+        gameDownloaded[_tokenID] = true;
+    }
+
+    function verifyOwnership(uint256 _tokenID) public view returns (bool) {
+        require(_exists(_tokenID), "GameDRM: Invalid token ID");
+        return gameOwners[_tokenID] == msg.sender;
+    }
+
+    function getGameFile(uint256 _tokenID) public view returns (string memory) {
+        require(_exists(_tokenID), "GameDRM: Invalid token ID");
+        require(gameOwners[_tokenID] == msg.sender, "GameDRM: You are not the owner of this game");
+        require(gameDownloaded[_tokenID] == true, "GameDRM: Game not downloaded yet");
+        return gameFiles[_tokenID];
+    }
+}
